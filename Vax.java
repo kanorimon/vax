@@ -175,10 +175,6 @@ class Disassembler {
 	static void setOpecode(){
 		byte code = getMemoryByte();
 		int tmp = 0;
-		byte tmp1 = 0;
-		byte tmp2 = 0;
-		byte tmp3 = 0;
-		byte tmp4 = 0;
 		
 		switch(code & 0xF){
 		case 0xf:
@@ -187,30 +183,27 @@ class Disassembler {
 				/* immediate */
 				switch(Assembly.opecodeMode){
 				case 0:
-					tmp = getMemoryByte();
+					tmp = getMemoryByte() & 0xFF;
 					break;
 				case 1:
-					tmp1 = getMemoryByte();
-					tmp2 = getMemoryByte();
-					tmp = ((tmp2 << 8) & 0xFF00) + tmp1;
+					tmp = getMemoryByte() & 0xFF;
+					tmp = (tmp + (getMemoryByte() << 8)) & 0xFF00;
 					break;
 				case 2:
-					tmp1 = getMemoryByte();
-					tmp2 = getMemoryByte();
-					tmp3 = getMemoryByte();
-					tmp4 = getMemoryByte();
-					tmp = ((tmp4 << 24) & 0xFF000000) + ((tmp3 << 16) & 0xFF0000) + ((tmp2 << 8) & 0xFF00) + tmp1;
+					tmp = getMemoryByte() & 0xFF;
+					tmp = (tmp + (getMemoryByte() << 8)) & 0xFFFF;
+					tmp = (tmp + (getMemoryByte() << 16)) & 0xFFFFFF;
+					tmp = tmp + (getMemoryByte() << 24);
 					break;
 				}
 				Assembly.operand.add(String.format("$0x%x", tmp));
 				break;
 			case 0xe:
 				/* long word displacement */
-				tmp1 = getMemoryByte();
-				tmp2 = getMemoryByte();
-				tmp3 = getMemoryByte();
-				tmp4 = getMemoryByte();
-				tmp = ((tmp4 << 24) & 0xFF000000) + ((tmp3 << 16) & 0xFF0000) + ((tmp2 << 8) & 0xFF00) + tmp1;
+				tmp = getMemoryByte() & 0xFF;
+				tmp = (tmp + (getMemoryByte() << 8)) & 0xFFFF;
+				tmp = (tmp + (getMemoryByte() << 16)) & 0xFFFFFF;
+				tmp = tmp + (getMemoryByte() << 24);
 				Assembly.operand.add(String.format("0x%x", Assembly.pc + tmp));
 				break;
 			}
@@ -246,13 +239,13 @@ class Disassembler {
 				break;
 			case 0xa:
 				/* byte displacement */
-				tmp1 = getMemoryByte();
-				Assembly.operand.add(String.format("0x%x(%s)", tmp1 << 24 >> 24, Register.REGISTER_NAME[code & 0xF]));
+				tmp = getMemoryByte();
+				Assembly.operand.add(String.format("0x%x(%s)", tmp << 24 >> 24, Register.REGISTER_NAME[code & 0xF]));
 				break;
 			case 0xb:
 				/* byte displacement deferred */
-				tmp1 = getMemoryByte();
-				Assembly.operand.add(String.format("*0x%x(%s)", tmp1 << 24 >> 24, Register.REGISTER_NAME[code & 0xF]));
+				tmp = getMemoryByte();
+				Assembly.operand.add(String.format("*0x%x(%s)", tmp << 24 >> 24, Register.REGISTER_NAME[code & 0xF]));
 				break;			
 			}
 			break;
