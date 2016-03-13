@@ -84,19 +84,16 @@ class Assembly {
 }
 
 class Register{
-	static final String[] REGISTER_NAME = {"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","","","ap","fp","sp","pc"};
+	static final String[] REGISTER_NAME = {"r0","r1","r2","r3","r4","r5","r6","r7","r8","r9","r10","r11","ap","fp","sp","pc"};
 }
 class Disassembler {
 	
 	static void disassemble(){
-		
 		Assembly.start();
 		
 		while(Assembly.pc < Memory.getSize()){
 			Assembly.reset();
-			
 			setOperand();
-			
 			Assembly.print();
 		}
 	}
@@ -107,6 +104,25 @@ class Disassembler {
 		return Assembly.memory.get(Assembly.memory.size()-1);
 	}
 	
+	static int getByte(){
+		int tmp = getMemoryByte() & 0xFF;
+		return tmp;
+	}
+
+	static int getWord(){
+		int tmp = getMemoryByte() & 0xFF;
+		tmp = (tmp + (getMemoryByte() << 8)) & 0xFF00;
+		return tmp;
+	}
+
+	static int getLongWord(){
+		int tmp = getMemoryByte() & 0xFF;
+		tmp = (tmp + (getMemoryByte() << 8)) & 0xFFFF;
+		tmp = (tmp + (getMemoryByte() << 16)) & 0xFFFFFF;
+		tmp = tmp + (getMemoryByte() << 24);
+		return tmp;
+	}
+
 	static void setOperand(){
 		byte code = getMemoryByte();
 		
@@ -183,27 +199,20 @@ class Disassembler {
 				/* immediate */
 				switch(Assembly.opecodeMode){
 				case 0:
-					tmp = getMemoryByte() & 0xFF;
+					tmp = getByte();
 					break;
 				case 1:
-					tmp = getMemoryByte() & 0xFF;
-					tmp = (tmp + (getMemoryByte() << 8)) & 0xFF00;
+					tmp = getWord();
 					break;
 				case 2:
-					tmp = getMemoryByte() & 0xFF;
-					tmp = (tmp + (getMemoryByte() << 8)) & 0xFFFF;
-					tmp = (tmp + (getMemoryByte() << 16)) & 0xFFFFFF;
-					tmp = tmp + (getMemoryByte() << 24);
+					tmp = getLongWord();
 					break;
 				}
 				Assembly.operand.add(String.format("$0x%x", tmp));
 				break;
 			case 0xe:
 				/* long word displacement */
-				tmp = getMemoryByte() & 0xFF;
-				tmp = (tmp + (getMemoryByte() << 8)) & 0xFFFF;
-				tmp = (tmp + (getMemoryByte() << 16)) & 0xFFFFFF;
-				tmp = tmp + (getMemoryByte() << 24);
+				tmp = getLongWord();
 				Assembly.operand.add(String.format("0x%x", Assembly.pc + tmp));
 				break;
 			}
@@ -239,13 +248,33 @@ class Disassembler {
 				break;
 			case 0xa:
 				/* byte displacement */
-				tmp = getMemoryByte();
+				tmp = getByte();
 				Assembly.operand.add(String.format("0x%x(%s)", tmp << 24 >> 24, Register.REGISTER_NAME[code & 0xF]));
 				break;
 			case 0xb:
 				/* byte displacement deferred */
-				tmp = getMemoryByte();
+				tmp = getByte();
 				Assembly.operand.add(String.format("*0x%x(%s)", tmp << 24 >> 24, Register.REGISTER_NAME[code & 0xF]));
+				break;			
+			case 0xc:
+				/* word displacement */
+				tmp = getWord();
+				Assembly.operand.add(String.format("0x%x(%s)", tmp << 16 >> 16, Register.REGISTER_NAME[code & 0xF]));
+				break;
+			case 0xd:
+				/* word displacement deferred */
+				tmp = getWord();
+				Assembly.operand.add(String.format("*0x%x(%s)", tmp << 16 >> 16, Register.REGISTER_NAME[code & 0xF]));
+				break;			
+			case 0xe:
+				/* long word displacement */
+				tmp = getLongWord();
+				Assembly.operand.add(String.format("0x%x(%s)", tmp, Register.REGISTER_NAME[code & 0xF]));
+				break;
+			case 0xf:
+				/* long word displacement deferred */
+				tmp = getLongWord();
+				Assembly.operand.add(String.format("*0x%x(%s)", tmp, Register.REGISTER_NAME[code & 0xF]));
 				break;			
 			}
 			break;
